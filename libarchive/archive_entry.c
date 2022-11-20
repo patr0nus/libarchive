@@ -604,6 +604,24 @@ archive_entry_pathname_w(struct archive_entry *entry)
 	return (NULL);
 }
 
+const char *
+archive_entry_pathname_raw(struct archive_entry *entry)
+{
+	return archive_mstring_get_mbs_original(&entry->ae_pathname);
+}
+
+const char *
+archive_entry_pathname_utf8_raw(struct archive_entry *entry)
+{
+	return archive_mstring_get_utf8_original(&entry->ae_pathname);
+}
+
+const wchar_t *
+archive_entry_pathname_w_raw(struct archive_entry *entry)
+{
+	return archive_mstring_get_wcs_original(&entry->ae_pathname);
+}
+
 int
 _archive_entry_pathname_l(struct archive_entry *entry,
     const char **p, size_t *len, struct archive_string_conv *sc)
