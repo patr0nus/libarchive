@@ -3856,12 +3856,14 @@ archive_mstring_clean(struct archive_mstring *aes)
 	archive_string_free(&(aes->aes_utf8));
 	archive_string_free(&(aes->aes_mbs_in_locale));
 	aes->aes_set = 0;
+	aes->aes_original = 0;
 }
 
 void
 archive_mstring_copy(struct archive_mstring *dest, struct archive_mstring *src)
 {
 	dest->aes_set = src->aes_set;
+	dest->aes_original = src->aes_original;
 	archive_string_copy(&(dest->aes_mbs), &(src->aes_mbs));
 	archive_string_copy(&(dest->aes_utf8), &(src->aes_utf8));
 	archive_wstring_copy(&(dest->aes_wcs), &(src->aes_wcs));
@@ -3984,6 +3986,21 @@ archive_mstring_get_wcs(struct archive *a, struct archive_mstring *aes,
 	return (ret);
 }
 
+const char *
+archive_mstring_get_mbs_original(struct archive_mstring *aes) {
+  return aes->aes_original == AES_SET_MBS ? aes->aes_mbs.s : NULL;
+}
+
+const char *
+archive_mstring_get_utf8_original(struct archive_mstring *aes) {
+  return aes->aes_original == AES_SET_UTF8 ? aes->aes_utf8.s : NULL;
+}
+
+const wchar_t *
+archive_mstring_get_wcs_original(struct archive_mstring *aes) {
+  return aes->aes_original == AES_SET_WCS ? aes->aes_wcs.s : NULL;
+}
+
 int
 archive_mstring_get_mbs_l(struct archive *a, struct archive_mstring *aes,
     const char **p, size_t *length, struct archive_string_conv *sc)
@@ -4048,6 +4065,7 @@ archive_mstring_copy_mbs(struct archive_mstring *aes, const char *mbs)
 {
 	if (mbs == NULL) {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
 		return (0);
 	}
 	return (archive_mstring_copy_mbs_len(aes, mbs, strlen(mbs)));
@@ -4059,9 +4077,11 @@ archive_mstring_copy_mbs_len(struct archive_mstring *aes, const char *mbs,
 {
 	if (mbs == NULL) {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
 		return (0);
 	}
 	aes->aes_set = AES_SET_MBS; /* Only MBS form is set now. */
+	aes->aes_original = AES_SET_MBS;
 	archive_strncpy(&(aes->aes_mbs), mbs, len);
 	archive_string_empty(&(aes->aes_utf8));
 	archive_wstring_empty(&(aes->aes_wcs));
@@ -4080,9 +4100,11 @@ archive_mstring_copy_utf8(struct archive_mstring *aes, const char *utf8)
 {
   if (utf8 == NULL) {
     aes->aes_set = 0;
+    aes->aes_original = 0;
     return (0);
   }
   aes->aes_set = AES_SET_UTF8;
+  aes->aes_original = AES_SET_UTF8;
   archive_string_empty(&(aes->aes_mbs));
   archive_string_empty(&(aes->aes_wcs));
   archive_strncpy(&(aes->aes_utf8), utf8, strlen(utf8));
@@ -4095,9 +4117,11 @@ archive_mstring_copy_wcs_len(struct archive_mstring *aes, const wchar_t *wcs,
 {
 	if (wcs == NULL) {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
 		return (0);
 	}
 	aes->aes_set = AES_SET_WCS; /* Only WCS form set. */
+	aes->aes_original = AES_SET_WCS;
 	archive_string_empty(&(aes->aes_mbs));
 	archive_string_empty(&(aes->aes_utf8));
 	archive_wstrncpy(&(aes->aes_wcs), wcs, len);
@@ -4112,6 +4136,7 @@ archive_mstring_copy_mbs_len_l(struct archive_mstring *aes,
 
 	if (mbs == NULL) {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
 		return (0);
 	}
 	archive_string_empty(&(aes->aes_mbs));
@@ -4126,9 +4151,11 @@ archive_mstring_copy_mbs_len_l(struct archive_mstring *aes,
 		if (archive_string_append(&(aes->aes_mbs),
 			mbs, mbsnbytes(mbs, len)) == NULL) {
 			aes->aes_set = 0;
+			aes->aes_original = 0;
 			r = -1;
 		} else {
 			aes->aes_set = AES_SET_MBS;
+			aes->aes_original = AES_SET_MBS;
 			r = 0;
 		}
 #if defined(HAVE_ICONV)
@@ -4150,9 +4177,11 @@ archive_mstring_copy_mbs_len_l(struct archive_mstring *aes,
 		sc->cd = cd;
 		if (r != 0) {
 			aes->aes_set = 0;
+			aes->aes_original = 0;
 			return (r);
 		}
 		aes->aes_set = AES_SET_UTF8;
+		aes->aes_original = AES_SET_UTF8;
 
 		/*
 		 * Append the UTF-8 string into wstring.
@@ -4172,17 +4201,25 @@ archive_mstring_copy_mbs_len_l(struct archive_mstring *aes,
 	} else {
 		r = archive_wstring_append_from_mbs_in_codepage(
 		    &(aes->aes_wcs), mbs, len, sc);
-		if (r == 0)
+		if (r == 0) {
 			aes->aes_set = AES_SET_WCS;
-		else
+			aes->aes_original = AES_SET_WCS;
+		}
+		else {
 			aes->aes_set = 0;
+			aes->aes_original = 0;
+		}
 	}
 #else
 	r = archive_strncpy_l(&(aes->aes_mbs), mbs, len, sc);
-	if (r == 0)
+	if (r == 0) {
 		aes->aes_set = AES_SET_MBS; /* Only MBS form is set now. */
-	else
+		aes->aes_original = AES_SET_MBS;
+	}
+	else {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
+	}
 #endif
 	return (r);
 }
@@ -4206,6 +4243,7 @@ archive_mstring_update_utf8(struct archive *a, struct archive_mstring *aes,
 
 	if (utf8 == NULL) {
 		aes->aes_set = 0;
+		aes->aes_original = 0;
 		return (0); /* Succeeded in clearing everything. */
 	}
 
@@ -4217,6 +4255,7 @@ archive_mstring_update_utf8(struct archive *a, struct archive_mstring *aes,
 	archive_wstring_empty(&(aes->aes_wcs));
 
 	aes->aes_set = AES_SET_UTF8;	/* Only UTF8 is set now. */
+	aes->aes_original = AES_SET_UTF8;
 
 	/* Try converting UTF-8 to MBS, return false on failure. */
 	sc = archive_string_conversion_from_charset(a, "UTF-8", 1);

@@ -216,6 +216,7 @@ struct archive_mstring {
 	 * can't rely on NULL pointers to indicate whether a string
 	 * has been set. */
 	int aes_set;
+	int aes_original;
 #define	AES_SET_MBS 1
 #define	AES_SET_UTF8 2
 #define	AES_SET_WCS 4
@@ -226,6 +227,9 @@ void	archive_mstring_copy(struct archive_mstring *dest, struct archive_mstring *
 int archive_mstring_get_mbs(struct archive *, struct archive_mstring *, const char **);
 int archive_mstring_get_utf8(struct archive *, struct archive_mstring *, const char **);
 int archive_mstring_get_wcs(struct archive *, struct archive_mstring *, const wchar_t **);
+const char *archive_mstring_get_mbs_original(struct archive_mstring *);
+const char *archive_mstring_get_utf8_original(struct archive_mstring *);
+const wchar_t *archive_mstring_get_wcs_original(struct archive_mstring *);
 int	archive_mstring_get_mbs_l(struct archive *, struct archive_mstring *, const char **,
 	    size_t *, struct archive_string_conv *);
 int	archive_mstring_copy_mbs(struct archive_mstring *, const char *mbs);
