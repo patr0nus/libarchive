@@ -838,10 +838,22 @@ test_archive_string_set_get(void)
 
 	assertEqualInt(0, archive_mstring_copy_mbs(&mstr, "AAA"));
 	check_string(a, &mstr, sc, "AAA", L"AAA");
+	assertEqualString("AAA", archive_mstring_get_mbs_original(&mstr));
+	assertA(NULL == archive_mstring_get_utf8_original(&mstr));
+	assertA(NULL == archive_mstring_get_wcs_original(&mstr));
+
 	assertEqualInt(4, archive_mstring_copy_utf8(&mstr, "BBBB"));
 	check_string(a, &mstr, sc, "BBBB", L"BBBB");
+	assertEqualUTF8String("BBBB", archive_mstring_get_utf8_original(&mstr));
+	assertA(NULL == archive_mstring_get_wcs_original(&mstr));
+	assertA(NULL == archive_mstring_get_mbs_original(&mstr));
+
 	assertEqualInt(0, archive_mstring_copy_wcs(&mstr, L"CCC12"));
 	check_string(a, &mstr, sc, "CCC12", L"CCC12");
+	assertEqualWString(L"CCC12", archive_mstring_get_wcs_original(&mstr));
+	assertA(NULL == archive_mstring_get_utf8_original(&mstr));
+	assertA(NULL == archive_mstring_get_mbs_original(&mstr));
+
 	assertEqualInt(0, archive_mstring_copy_mbs_len_l(&mstr, "DDDD-l", 6, sc));
 	check_string(a, &mstr, sc, "DDDD-l", L"DDDD-l");
 	assertEqualInt(0, archive_mstring_update_utf8(a, &mstr, "EEEEE---H"));
